@@ -1,9 +1,12 @@
+import { writeFile } from "node:fs/promises";
 import { Command } from "commander";
 import { GitRepository } from "./git/GitRepository.js";
 import { GitHistoryParser } from "./git/GitHistoryParser.js";
 import { GitHistoryAnalyzer } from "./git/GitHistoryAnalyzer.js";
 import { MusicMapper } from "./music/MusicMapper.js";
 import { MusicComposer } from "./music/MusicComposer.js";
+import { Synthesizer } from "./audio/Synthesizer.js";
+import { WavEncoder } from "./audio/WavEncoder.js";
 
 const program = new Command();
 
@@ -17,6 +20,8 @@ const historyParser = new GitHistoryParser();
 const historyAnalyzer = new GitHistoryAnalyzer();
 const musicMapper = new MusicMapper();
 const musicComposer = new MusicComposer();
+const synthesizer = new Synthesizer();
+const wavEncoder = new WavEncoder();
 
 program
   .command("analyze")
@@ -37,12 +42,48 @@ program
 
     const rawHistory = await repository.getRawHistory();
     const commits = historyParser.parse(rawHistory);
+
+    if (commits.length === 0) {
+      console.error(
+        "Time Traveler could not find any commits in this repository."
+      );
+
+      process.exitCode = 1;
+      return;
+    }
+
+    const latestCommit = commits.reduce(
+      (latest, commit) =>
+        commit.date > latest.date
+          ? commit
+          : latest
+    );
+
     const stats = historyAnalyzer.analyze(commits);
     const musicProfile = musicMapper.createProfile(stats);
 
     const musicEvents = musicComposer.compose(
       musicProfile,
       commits
+    );
+
+    const samples = synthesizer.render(
+      musicEvents
+    );
+
+    const wav = wavEncoder.encode(
+      samples
+    );
+
+    const shortHash =
+      latestCommit.hash.slice(-6);
+
+    const outputFileName =
+      `time-traveler-${shortHash}.wav`;
+
+    await writeFile(
+      outputFileName,
+      wav
     );
 
     console.log();
@@ -139,6 +180,11 @@ program
         });
       }
     }
+
+    console.log();
+    console.log(
+      `Audio written to ${outputFileName}`
+    );
   });
 
 function formatHour(hour: number): string {
