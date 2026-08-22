@@ -2,17 +2,19 @@ import { Command } from "commander";
 import { GitRepository } from "./git/GitRepository.js";
 import { GitHistoryParser } from "./git/GitHistoryParser.js";
 import { GitHistoryAnalyzer } from "./git/GitHistoryAnalyzer.js";
+import { MusicMapper } from "./music/MusicMapper.js";
 
 const program = new Command();
 
 program
   .name("time-traveler")
-  .description("Turn your Git history into an ambient musical soundscape")
+  .description("Turn your Git history into music")
   .version("0.1.0");
 
 const repository = new GitRepository(process.cwd());
 const historyParser = new GitHistoryParser();
 const historyAnalyzer = new GitHistoryAnalyzer();
+const musicMapper = new MusicMapper();
 
 program
   .command("analyze")
@@ -34,6 +36,7 @@ program
     const rawHistory = await repository.getRawHistory();
     const commits = historyParser.parse(rawHistory);
     const stats = historyAnalyzer.analyze(commits);
+    const musicProfile = musicMapper.createProfile(stats);
 
     console.log();
     console.log("Time Traveler");
@@ -81,6 +84,31 @@ program
         `  Busiest hour: ${formatHour(stats.busiestHour)}`
       );
     }
+
+    console.log();
+
+    console.log("Musical Profile");
+    console.log(
+      `  Tempo: ${musicProfile.tempo} BPM`
+    );
+    console.log(
+      `  Root note: ${musicProfile.rootNote}`
+    );
+    console.log(
+      `  Scale: ${musicProfile.scale}`
+    );
+    console.log(
+      `  Waveform: ${musicProfile.waveform}`
+    );
+    console.log(
+      `  Intensity: ${musicProfile.intensity.toFixed(2)}`
+    );
+    console.log(
+      `  Dissonance: ${musicProfile.dissonance.toFixed(2)}`
+    );
+    console.log(
+      `  Note density: ${musicProfile.noteDensity.toFixed(2)}`
+    );
   });
 
 function formatHour(hour: number): string {
