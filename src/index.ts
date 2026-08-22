@@ -3,6 +3,7 @@ import { GitRepository } from "./git/GitRepository.js";
 import { GitHistoryParser } from "./git/GitHistoryParser.js";
 import { GitHistoryAnalyzer } from "./git/GitHistoryAnalyzer.js";
 import { MusicMapper } from "./music/MusicMapper.js";
+import { MusicComposer } from "./music/MusicComposer.js";
 
 const program = new Command();
 
@@ -15,6 +16,7 @@ const repository = new GitRepository(process.cwd());
 const historyParser = new GitHistoryParser();
 const historyAnalyzer = new GitHistoryAnalyzer();
 const musicMapper = new MusicMapper();
+const musicComposer = new MusicComposer();
 
 program
   .command("analyze")
@@ -37,6 +39,11 @@ program
     const commits = historyParser.parse(rawHistory);
     const stats = historyAnalyzer.analyze(commits);
     const musicProfile = musicMapper.createProfile(stats);
+
+    const musicEvents = musicComposer.compose(
+      musicProfile,
+      commits
+    );
 
     console.log();
     console.log("Time Traveler");
@@ -109,6 +116,29 @@ program
     console.log(
       `  Note density: ${musicProfile.noteDensity.toFixed(2)}`
     );
+
+    console.log();
+
+    console.log("Composition");
+    console.log(
+      `  Events: ${musicEvents.length}`
+    );
+
+    if (musicEvents.length > 0) {
+      console.log();
+      console.log("Events");
+
+      for (const event of musicEvents) {
+        console.log({
+          startTime: event.startTime.toFixed(2),
+          duration: event.duration.toFixed(2),
+          frequency: event.frequency.toFixed(2),
+          amplitude: event.amplitude.toFixed(2),
+          waveform: event.waveform,
+          commit: event.commitHash?.slice(0, 7)
+        });
+      }
+    }
   });
 
 function formatHour(hour: number): string {
