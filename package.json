@@ -1,0 +1,33 @@
+{
+  "name": "time-traveler",
+  "version": "0.1.0",
+  "description": "A command-line tool that turns Git history into music",
+  "type": "module",
+  "bin": {
+    "time-traveler": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "git",
+    "cli",
+    "music",
+    "audio",
+    "typescript",
+    "node",
+    "generative-music"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
