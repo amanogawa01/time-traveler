@@ -35,4 +35,21 @@ export class GitRepository {
 
     return stdout.trim();
   }
+
+  public async getRawHistory(): Promise<string> {
+    const { stdout } = await execFileAsync(
+      "git",
+      [
+        "log",
+        "--format=%H%x1f%an%x1f%ae%x1f%aI%x1f%s",
+        "--numstat"
+      ],
+      {
+        cwd: this.workingDirectory,
+        maxBuffer: 10 * 1024 * 1024
+      }
+    );
+
+    return stdout;
+  }
 }
