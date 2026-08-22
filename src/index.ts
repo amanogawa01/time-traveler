@@ -76,7 +76,7 @@ program
     );
 
     const shortHash =
-      latestCommit.hash.slice(-6);
+    latestCommit.hash.slice(0, 7);
 
     const outputFileName =
       `time-traveler-${shortHash}.wav`;
