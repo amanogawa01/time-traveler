@@ -4,6 +4,7 @@ import {
   Envelope,
   type EnvelopeSettings
 } from "./Envelope.js";
+import { LowPassFilter } from "./LowPassFilter.js";
 
 export interface SynthesizerOptions {
   sampleRate: number;
@@ -13,8 +14,7 @@ export class Synthesizer {
   private readonly oscillator =
     new Oscillator();
 
-  private readonly envelope =
-    new Envelope();
+  private readonly envelope = new Envelope();
 
   public render(
     events: MusicEvent[],
@@ -35,14 +35,9 @@ export class Synthesizer {
         )
       );
 
-    const totalSamples =
-      Math.ceil(
-        totalDuration *
-        options.sampleRate
-      );
+    const totalSamples = Math.ceil( totalDuration * options.sampleRate);
 
-    const output =
-      new Float32Array(totalSamples);
+    const output = new Float32Array(totalSamples);
 
     for (const event of events) {
       this.renderEvent(
@@ -80,25 +75,45 @@ export class Synthesizer {
         event.layer
       );
 
+    const filter =
+      new LowPassFilter();
+
+    const cutoffFrequency =
+      this.getCutoffFrequency(
+        event.layer
+      );
+
     for (
       let index = 0;
       index < eventSamples;
       index += 1
     ) {
       const outputIndex =
-        startSample + index;
+        startSample +
+        index;
 
-      if (outputIndex >= output.length) {
+      if (
+        outputIndex >=
+        output.length
+      ) {
         break;
       }
 
       const time =
-        index / sampleRate;
+        index /
+        sampleRate;
 
       const timbreSample =
         this.getTimbreSample(
           event,
           time
+        );
+
+      const filteredSample =
+        filter.process(
+          timbreSample,
+          cutoffFrequency,
+          sampleRate
         );
 
       const envelopeAmplitude =
@@ -114,7 +129,7 @@ export class Synthesizer {
         );
 
       output[outputIndex] +=
-        timbreSample *
+        filteredSample *
         event.amplitude *
         envelopeAmplitude *
         layerGain;
@@ -191,6 +206,21 @@ export class Synthesizer {
     }
   }
 
+  private getCutoffFrequency(
+    layer: MusicEvent["layer"]
+  ): number {
+    switch (layer) {
+      case "melody":
+        return 12000;
+
+      case "bass":
+        return 1800;
+
+      case "pad":
+        return 2500;
+    }
+  }
+
   private getEnvelopeForLayer(
     layer: MusicEvent["layer"]
   ): EnvelopeSettings {
@@ -239,7 +269,8 @@ export class Synthesizer {
   private applyMasterGain(
     samples: Float32Array
   ): void {
-    const masterGain = 0.85;
+    const masterGain =
+      0.85;
 
     for (
       let index = 0;
