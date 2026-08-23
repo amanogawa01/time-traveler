@@ -52,7 +52,8 @@ export class Synthesizer {
       );
     }
 
-    this.normalize(output);
+    this.applyMasterGain(output);
+    this.softClip(output);
 
     return output;
   }
@@ -87,9 +88,7 @@ export class Synthesizer {
       const outputIndex =
         startSample + index;
 
-      if (
-        outputIndex >= output.length
-      ) {
+      if (outputIndex >= output.length) {
         break;
       }
 
@@ -110,10 +109,16 @@ export class Synthesizer {
           envelopeSettings
         );
 
+      const layerGain =
+        this.getLayerGain(
+          event.layer
+        );
+
       output[outputIndex] +=
         oscillatorSample *
         event.amplitude *
-        envelopeAmplitude;
+        envelopeAmplitude *
+        layerGain;
     }
   }
 
@@ -125,7 +130,7 @@ export class Synthesizer {
         return {
           attack: 0.02,
           decay: 0.12,
-          sustain: 0.65,
+          sustain: 0.6,
           release: 0.2
         };
 
@@ -147,31 +152,48 @@ export class Synthesizer {
     }
   }
 
-  private normalize(
+  private getLayerGain(
+    layer: MusicEvent["layer"]
+  ): number {
+    switch (layer) {
+      case "melody":
+        return 0.9;
+
+      case "bass":
+        return 0.7;
+
+      case "pad":
+        return 0.3;
+    }
+  }
+
+  private applyMasterGain(
     samples: Float32Array
   ): void {
-    let peak = 0;
-
-    for (const sample of samples) {
-      peak = Math.max(
-        peak,
-        Math.abs(sample)
-      );
-    }
-
-    if (peak <= 1) {
-      return;
-    }
-
-    const scale =
-      1 / peak;
+    const masterGain = 0.85;
 
     for (
       let index = 0;
       index < samples.length;
       index += 1
     ) {
-      samples[index] *= scale;
+      samples[index] *=
+        masterGain;
+    }
+  }
+
+  private softClip(
+    samples: Float32Array
+  ): void {
+    for (
+      let index = 0;
+      index < samples.length;
+      index += 1
+    ) {
+      samples[index] =
+        Math.tanh(
+          samples[index]
+        );
     }
   }
 }

@@ -51,7 +51,8 @@ export class MusicComposer {
     const maximumFilesChanged =
       Math.max(
         ...chronologicalCommits.map(
-          commit => commit.filesChanged
+          commit =>
+            commit.filesChanged
         ),
         1
       );
@@ -111,7 +112,9 @@ export class MusicComposer {
         );
 
       const melodyFrequency =
-        midiToFrequency(melodyMidi);
+        midiToFrequency(
+          melodyMidi
+        );
 
       const melodyDuration =
         this.calculateMelodyDuration(
@@ -140,52 +143,89 @@ export class MusicComposer {
         rootMidi -
         12 +
         scaleIntervals[
-          scaleDegree % scaleIntervals.length
+          scaleDegree %
+          scaleIntervals.length
         ];
 
       events.push({
         startTime: currentTime,
+
         duration:
           secondsPerBeat *
           (2 + fileComplexity),
+
         frequency:
-          midiToFrequency(bassMidi),
+          midiToFrequency(
+            bassMidi
+          ),
+
         amplitude:
           this.calculateAmplitude(
             profile,
             size,
             "bass"
           ),
+
         waveform: "sine",
         layer: "bass",
         commitHash: commit.hash
       });
 
-      const padRootMidi =
-        rootMidi +
-        scaleIntervals[
-          scaleDegree % scaleIntervals.length
-        ];
-
       const padDuration =
         secondsPerBeat *
-        (3 + fileComplexity * 3);
+        (
+          3 +
+          fileComplexity * 3
+        );
 
-      events.push({
-        startTime: currentTime,
-        duration: padDuration,
-        frequency:
-          midiToFrequency(padRootMidi),
-        amplitude:
-          this.calculateAmplitude(
-            profile,
-            size,
-            "pad"
-          ),
-        waveform: "triangle",
-        layer: "pad",
-        commitHash: commit.hash
-      });
+      const chordDegrees = [
+        scaleDegree,
+        scaleDegree + 2,
+        scaleDegree + 4
+      ];
+
+      for (
+        const chordDegree
+        of chordDegrees
+      ) {
+        const wrappedDegree =
+          chordDegree %
+          scaleIntervals.length;
+
+        const octaveShift =
+          Math.floor(
+            chordDegree /
+            scaleIntervals.length
+          ) * 12;
+
+        const padMidi =
+          rootMidi +
+          scaleIntervals[
+            wrappedDegree
+          ] +
+          octaveShift;
+
+        events.push({
+          startTime: currentTime,
+          duration: padDuration,
+
+          frequency:
+            midiToFrequency(
+              padMidi
+            ),
+
+          amplitude:
+            this.calculateAmplitude(
+              profile,
+              size,
+              "pad"
+            ),
+
+          waveform: "sine",
+          layer: "pad",
+          commitHash: commit.hash
+        });
+      }
 
       currentTime +=
         this.calculateSpacing(
@@ -233,11 +273,15 @@ export class MusicComposer {
   private calculateTensionOffset(
     deletionRatio: number
   ): number {
-    if (deletionRatio >= 0.6) {
+    if (
+      deletionRatio >= 0.6
+    ) {
       return 1;
     }
 
-    if (deletionRatio >= 0.35) {
+    if (
+      deletionRatio >= 0.35
+    ) {
       return -1;
     }
 
@@ -250,7 +294,10 @@ export class MusicComposer {
   ): number {
     return (
       secondsPerBeat *
-      (0.75 + fileComplexity * 1.5)
+      (
+        0.75 +
+        fileComplexity * 1.5
+      )
     );
   }
 
@@ -261,8 +308,10 @@ export class MusicComposer {
   ): number {
     const base =
       0.12 +
-      profile.intensity * 0.18 +
-      commitSize * 0.18;
+      profile.intensity *
+        0.18 +
+      commitSize *
+        0.18;
 
     switch (layer) {
       case "melody":
@@ -279,8 +328,8 @@ export class MusicComposer {
 
       case "pad":
         return Math.min(
-          base * 0.55,
-          0.25
+          base * 0.35,
+          0.16
         );
     }
   }
@@ -300,7 +349,9 @@ export class MusicComposer {
       current === undefined ||
       next === undefined
     ) {
-      return secondsPerBeat * 2;
+      return (
+        secondsPerBeat * 2
+      );
     }
 
     const millisecondsBetween =
@@ -320,7 +371,10 @@ export class MusicComposer {
 
     return (
       secondsPerBeat *
-      (1 + normalizedGap * 3)
+      (
+        1 +
+        normalizedGap * 3
+      )
     );
   }
 }

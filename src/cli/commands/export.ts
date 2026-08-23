@@ -1,3 +1,4 @@
+import path from "node:path";
 import { writeFile } from "node:fs/promises";
 import type { Command } from "commander";
 import { GitRepository } from "../../git/GitRepository.js";
@@ -138,9 +139,12 @@ export function registerExportCommand(
         const shortHash =
           latestCommit.hash.slice(0, 7);
 
+        const repositoryName =
+          path.basename(process.cwd());
+
         const outputFileName =
           options.output ??
-          `time-traveler-${shortHash}.wav`;
+          `${repositoryName}-${shortHash}.wav`;
 
         await writeFile(
           outputFileName,
