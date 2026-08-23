@@ -1,13 +1,37 @@
+import type { StereoBuffer } from "./StereoBuffer.js";
+
+export interface WavEncoderOptions {
+  sampleRate: number;
+}
+
 export class WavEncoder {
   public encode(
-    samples: Float32Array,
-    sampleRate = 44100
+    stereo: StereoBuffer,
+    options: WavEncoderOptions = {
+      sampleRate: 44100
+    }
   ): Buffer {
-    const bytesPerSample = 2;
-    const channelCount = 1;
+    if (
+      stereo.left.length !==
+      stereo.right.length
+    ) {
+      throw new Error(
+        "Left and right channels must have the same length."
+      );
+    }
+
+    const channels = 2;
+    const bitsPerSample = 16;
+
+    const bytesPerSample =
+      bitsPerSample / 8;
+
+    const frameCount =
+      stereo.left.length;
 
     const dataSize =
-      samples.length *
+      frameCount *
+      channels *
       bytesPerSample;
 
     const buffer =
@@ -15,112 +39,106 @@ export class WavEncoder {
         44 + dataSize
       );
 
-    let offset = 0;
-
     buffer.write(
       "RIFF",
-      offset
+      0
     );
-    offset += 4;
 
     buffer.writeUInt32LE(
       36 + dataSize,
-      offset
+      4
     );
-    offset += 4;
 
     buffer.write(
       "WAVE",
-      offset
+      8
     );
-    offset += 4;
 
     buffer.write(
       "fmt ",
-      offset
+      12
     );
-    offset += 4;
 
     buffer.writeUInt32LE(
       16,
-      offset
+      16
     );
-    offset += 4;
 
     buffer.writeUInt16LE(
       1,
-      offset
+      20
     );
-    offset += 2;
 
     buffer.writeUInt16LE(
-      channelCount,
-      offset
+      channels,
+      22
     );
-    offset += 2;
 
     buffer.writeUInt32LE(
-      sampleRate,
-      offset
+      options.sampleRate,
+      24
     );
-    offset += 4;
+
+    const byteRate =
+      options.sampleRate *
+      channels *
+      bytesPerSample;
 
     buffer.writeUInt32LE(
-      sampleRate *
-        channelCount *
-        bytesPerSample,
-      offset
+      byteRate,
+      28
     );
-    offset += 4;
+
+    const blockAlign =
+      channels *
+      bytesPerSample;
 
     buffer.writeUInt16LE(
-      channelCount *
-        bytesPerSample,
-      offset
+      blockAlign,
+      32
     );
-    offset += 2;
 
     buffer.writeUInt16LE(
-      16,
-      offset
+      bitsPerSample,
+      34
     );
-    offset += 2;
 
     buffer.write(
       "data",
-      offset
+      36
     );
-    offset += 4;
 
     buffer.writeUInt32LE(
       dataSize,
-      offset
+      40
     );
-    offset += 4;
 
-    for (const sample of samples) {
-      const clamped =
-        Math.max(
-          -1,
-          Math.min(
-            1,
-            sample
-          )
+    let offset = 44;
+
+    for (
+      let index = 0;
+      index < frameCount;
+      index += 1
+    ) {
+      const leftSample =
+        this.floatToInt16(
+          stereo.left[index] ?? 0
         );
 
-      const pcm =
-        clamped < 0
-          ? Math.round(
-              clamped *
-              32768
-            )
-          : Math.round(
-              clamped *
-              32767
-            );
+      const rightSample =
+        this.floatToInt16(
+          stereo.right[index] ?? 0
+        );
 
       buffer.writeInt16LE(
-        pcm,
+        leftSample,
+        offset
+      );
+
+      offset += 2;
+
+      buffer.writeInt16LE(
+        rightSample,
         offset
       );
 
@@ -128,5 +146,30 @@ export class WavEncoder {
     }
 
     return buffer;
+  }
+
+  private floatToInt16(
+    sample: number
+  ): number {
+    const clamped =
+      Math.max(
+        -1,
+        Math.min(
+          1,
+          sample
+        )
+      );
+
+    if (clamped < 0) {
+      return Math.round(
+        clamped *
+        32768
+      );
+    }
+
+    return Math.round(
+      clamped *
+      32767
+    );
   }
 }

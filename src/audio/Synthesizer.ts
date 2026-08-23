@@ -5,6 +5,7 @@ import {
   type EnvelopeSettings
 } from "./Envelope.js";
 import { LowPassFilter } from "./LowPassFilter.js";
+import type { StereoBuffer } from "./StereoBuffer.js";
 
 export interface SynthesizerOptions {
   sampleRate: number;
@@ -14,16 +15,20 @@ export class Synthesizer {
   private readonly oscillator =
     new Oscillator();
 
-  private readonly envelope = new Envelope();
+  private readonly envelope =
+    new Envelope();
 
   public render(
     events: MusicEvent[],
     options: SynthesizerOptions = {
       sampleRate: 44100
     }
-  ): Float32Array {
+  ): StereoBuffer {
     if (events.length === 0) {
-      return new Float32Array();
+      return {
+        left: new Float32Array(),
+        right: new Float32Array()
+      };
     }
 
     const totalDuration =
@@ -35,26 +40,48 @@ export class Synthesizer {
         )
       );
 
-    const totalSamples = Math.ceil( totalDuration * options.sampleRate);
+    const totalSamples =
+      Math.ceil(
+        totalDuration *
+        options.sampleRate
+      );
 
-    const output = new Float32Array(totalSamples);
+    const left =
+      new Float32Array(
+        totalSamples
+      );
+
+    const right =
+      new Float32Array(
+        totalSamples
+      );
 
     for (const event of events) {
       this.renderEvent(
-        output,
+        left,
+        right,
         event,
         options.sampleRate
       );
     }
 
-    this.applyMasterGain(output);
-    this.softClip(output);
+    this.applyMasterGain(
+      left,
+      right
+    );
 
-    return output;
+    this.softClip(left);
+    this.softClip(right);
+
+    return {
+      left,
+      right
+    };
   }
 
   private renderEvent(
-    output: Float32Array,
+    left: Float32Array,
+    right: Float32Array,
     event: MusicEvent,
     sampleRate: number
   ): void {
@@ -75,13 +102,25 @@ export class Synthesizer {
         event.layer
       );
 
-    const filter =
-      new LowPassFilter();
-
     const cutoffFrequency =
       this.getCutoffFrequency(
         event.layer
       );
+
+    const leftFilter =
+      new LowPassFilter();
+
+    const rightFilter =
+      new LowPassFilter();
+
+    const pan =
+      this.getPan(event);
+
+    const {
+      leftGain,
+      rightGain
+    } =
+      this.calculatePanGains(pan);
 
     for (
       let index = 0;
@@ -94,7 +133,7 @@ export class Synthesizer {
 
       if (
         outputIndex >=
-        output.length
+        left.length
       ) {
         break;
       }
@@ -109,8 +148,15 @@ export class Synthesizer {
           time
         );
 
-      const filteredSample =
-        filter.process(
+      const filteredLeft =
+        leftFilter.process(
+          timbreSample,
+          cutoffFrequency,
+          sampleRate
+        );
+
+      const filteredRight =
+        rightFilter.process(
           timbreSample,
           cutoffFrequency,
           sampleRate
@@ -128,11 +174,20 @@ export class Synthesizer {
           event.layer
         );
 
-      output[outputIndex] +=
-        filteredSample *
+      const sample =
         event.amplitude *
         envelopeAmplitude *
         layerGain;
+
+      left[outputIndex] +=
+        filteredLeft *
+        sample *
+        leftGain;
+
+      right[outputIndex] +=
+        filteredRight *
+        sample *
+        rightGain;
     }
   }
 
@@ -206,6 +261,94 @@ export class Synthesizer {
     }
   }
 
+  private getPan(
+    event: MusicEvent
+  ): number {
+    switch (event.layer) {
+      case "bass":
+        return 0;
+
+      case "melody":
+        return this.getMelodyPan(
+          event.frequency
+        );
+
+      case "pad":
+        return this.getPadPan(
+          event.frequency
+        );
+    }
+  }
+
+  private getMelodyPan(
+    frequency: number
+  ): number {
+    const normalized =
+      Math.min(
+        1,
+        Math.max(
+          0,
+          (frequency - 130) /
+          (1046 - 130)
+        )
+      );
+
+    return (
+      normalized * 0.8 -
+      0.4
+    );
+  }
+
+  private getPadPan(
+    frequency: number
+  ): number {
+    const normalized =
+      Math.min(
+        1,
+        Math.max(
+          0,
+          (frequency - 130) /
+          (1046 - 130)
+        )
+      );
+
+    return (
+      normalized * 1.2 -
+      0.6
+    );
+  }
+
+  private calculatePanGains(
+    pan: number
+  ): {
+    leftGain: number;
+    rightGain: number;
+  } {
+    const clampedPan =
+      Math.min(
+        1,
+        Math.max(
+          -1,
+          pan
+        )
+      );
+
+    const angle =
+      (
+        clampedPan + 1
+      ) *
+      Math.PI /
+      4;
+
+    return {
+      leftGain:
+        Math.cos(angle),
+
+      rightGain:
+        Math.sin(angle)
+    };
+  }
+
   private getCutoffFrequency(
     layer: MusicEvent["layer"]
   ): number {
@@ -267,17 +410,21 @@ export class Synthesizer {
   }
 
   private applyMasterGain(
-    samples: Float32Array
+    left: Float32Array,
+    right: Float32Array
   ): void {
     const masterGain =
       0.85;
 
     for (
       let index = 0;
-      index < samples.length;
+      index < left.length;
       index += 1
     ) {
-      samples[index] *=
+      left[index] *=
+        masterGain;
+
+      right[index] *=
         masterGain;
     }
   }

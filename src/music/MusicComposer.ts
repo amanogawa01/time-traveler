@@ -149,23 +149,19 @@ export class MusicComposer {
 
       events.push({
         startTime: currentTime,
-
         duration:
           secondsPerBeat *
           (2 + fileComplexity),
-
         frequency:
           midiToFrequency(
             bassMidi
           ),
-
         amplitude:
           this.calculateAmplitude(
             profile,
             size,
             "bass"
           ),
-
         waveform: "sine",
         layer: "bass",
         commitHash: commit.hash
@@ -208,19 +204,16 @@ export class MusicComposer {
         events.push({
           startTime: currentTime,
           duration: padDuration,
-
           frequency:
             midiToFrequency(
               padMidi
             ),
-
           amplitude:
             this.calculateAmplitude(
               profile,
               size,
               "pad"
             ),
-
           waveform: "sine",
           layer: "pad",
           commitHash: commit.hash
@@ -231,7 +224,8 @@ export class MusicComposer {
         this.calculateSpacing(
           chronologicalCommits,
           index,
-          secondsPerBeat
+          secondsPerBeat,
+          chronologicalCommits.length
         );
     }
 
@@ -337,7 +331,8 @@ export class MusicComposer {
   private calculateSpacing(
     commits: GitCommit[],
     index: number,
-    secondsPerBeat: number
+    secondsPerBeat: number,
+    totalCommitCount: number
   ): number {
     const current =
       commits[index];
@@ -349,9 +344,7 @@ export class MusicComposer {
       current === undefined ||
       next === undefined
     ) {
-      return (
-        secondsPerBeat * 2
-      );
+      return secondsPerBeat;
     }
 
     const millisecondsBetween =
@@ -359,22 +352,52 @@ export class MusicComposer {
       current.date.getTime();
 
     const hoursBetween =
-      millisecondsBetween /
-      (1000 * 60 * 60);
+      Math.max(
+        0,
+        millisecondsBetween /
+        (1000 * 60 * 60)
+      );
+
+    const compressedGap =
+      Math.log1p(
+        hoursBetween
+      );
+
+    const maximumReferenceGap =
+      Math.log1p(
+        24 * 365
+      );
 
     const normalizedGap =
-      normalize(
-        hoursBetween,
-        0,
-        48
+      Math.min(
+        1,
+        compressedGap /
+        maximumReferenceGap
+      );
+
+    const sizeCompression =
+      1 /
+      (
+        1 +
+        Math.log10(
+          Math.max(
+            1,
+            totalCommitCount
+          )
+        ) *
+        0.35
+      );
+
+    const baseSpacing =
+      secondsPerBeat *
+      (
+        0.75 +
+        normalizedGap * 4.25
       );
 
     return (
-      secondsPerBeat *
-      (
-        1 +
-        normalizedGap * 3
-      )
+      baseSpacing *
+      sizeCompression
     );
   }
 }

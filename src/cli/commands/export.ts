@@ -19,7 +19,7 @@ export function registerExportCommand(
   program
     .command("export")
     .description(
-      "Generate a WAV soundscape from the current Git repository"
+      "Generate a WAV sound from the current Git repository"
     )
     .option(
       "-o, --output <file>",
@@ -128,19 +128,23 @@ export function registerExportCommand(
           `  Pad: ${padCount}`
         );
 
-        const samples =
+        const stereo =
           synthesizer.render(
             musicEvents
           );
 
         const wav =
-          wavEncoder.encode(samples);
+          wavEncoder.encode(
+            stereo
+          );
 
         const shortHash =
           latestCommit.hash.slice(0, 7);
 
         const repositoryName =
-          path.basename(process.cwd());
+          path.basename(
+            process.cwd()
+          );
 
         const outputFileName =
           options.output ??
