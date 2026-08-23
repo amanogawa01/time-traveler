@@ -94,6 +94,39 @@ export function registerExportCommand(
             commits
           );
 
+        const melodyCount =
+          musicEvents.filter(
+            event =>
+              event.layer === "melody"
+          ).length;
+
+        const bassCount =
+          musicEvents.filter(
+            event =>
+              event.layer === "bass"
+          ).length;
+
+        const padCount =
+          musicEvents.filter(
+            event =>
+              event.layer === "pad"
+          ).length;
+
+        console.log();
+        console.log("Composition");
+        console.log(
+          `  Total events: ${musicEvents.length}`
+        );
+        console.log(
+          `  Melody: ${melodyCount}`
+        );
+        console.log(
+          `  Bass: ${bassCount}`
+        );
+        console.log(
+          `  Pad: ${padCount}`
+        );
+
         const samples =
           synthesizer.render(
             musicEvents

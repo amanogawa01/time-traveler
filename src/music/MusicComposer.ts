@@ -1,6 +1,9 @@
 import type { GitCommit } from "../git/GitCommit.js";
 import type { MusicProfile } from "./MusicProfile.js";
-import type { MusicEvent } from "./MusicEvent.js";
+import type {
+  MusicEvent,
+  MusicLayer
+} from "./MusicEvent.js";
 import { SCALE_INTERVALS } from "./scales.js";
 import {
   noteToMidi,
@@ -31,7 +34,8 @@ export class MusicComposer {
     const chronologicalCommits =
       [...commits].sort(
         (a, b) =>
-          a.date.getTime() - b.date.getTime()
+          a.date.getTime() -
+          b.date.getTime()
       );
 
     const maximumLinesChanged =
@@ -95,38 +99,91 @@ export class MusicComposer {
           scaleIntervals.length
         );
 
-      const octave =
+      const melodyOctave =
         this.chooseOctave(commit);
 
-      const midiNote =
+      const melodyMidi =
         rootMidi +
         scaleIntervals[scaleDegree] +
-        (octave - 4) * 12 +
+        (melodyOctave - 4) * 12 +
         this.calculateTensionOffset(
           deletionRatio
         );
 
-      const frequency =
-        midiToFrequency(midiNote);
+      const melodyFrequency =
+        midiToFrequency(melodyMidi);
 
-      const duration =
-        this.calculateDuration(
+      const melodyDuration =
+        this.calculateMelodyDuration(
           secondsPerBeat,
           fileComplexity
         );
 
-      const amplitude =
+      const melodyAmplitude =
         this.calculateAmplitude(
           profile,
-          size
+          size,
+          "melody"
         );
 
       events.push({
         startTime: currentTime,
-        duration,
-        frequency,
-        amplitude,
+        duration: melodyDuration,
+        frequency: melodyFrequency,
+        amplitude: melodyAmplitude,
         waveform: profile.waveform,
+        layer: "melody",
+        commitHash: commit.hash
+      });
+
+      const bassMidi =
+        rootMidi -
+        12 +
+        scaleIntervals[
+          scaleDegree % scaleIntervals.length
+        ];
+
+      events.push({
+        startTime: currentTime,
+        duration:
+          secondsPerBeat *
+          (2 + fileComplexity),
+        frequency:
+          midiToFrequency(bassMidi),
+        amplitude:
+          this.calculateAmplitude(
+            profile,
+            size,
+            "bass"
+          ),
+        waveform: "sine",
+        layer: "bass",
+        commitHash: commit.hash
+      });
+
+      const padRootMidi =
+        rootMidi +
+        scaleIntervals[
+          scaleDegree % scaleIntervals.length
+        ];
+
+      const padDuration =
+        secondsPerBeat *
+        (3 + fileComplexity * 3);
+
+      events.push({
+        startTime: currentTime,
+        duration: padDuration,
+        frequency:
+          midiToFrequency(padRootMidi),
+        amplitude:
+          this.calculateAmplitude(
+            profile,
+            size,
+            "pad"
+          ),
+        waveform: "triangle",
+        layer: "pad",
         commitHash: commit.hash
       });
 
@@ -187,29 +244,45 @@ export class MusicComposer {
     return 0;
   }
 
-  private calculateDuration(
+  private calculateMelodyDuration(
     secondsPerBeat: number,
     fileComplexity: number
   ): number {
     return (
       secondsPerBeat *
-      (1 + fileComplexity * 2)
+      (0.75 + fileComplexity * 1.5)
     );
   }
 
   private calculateAmplitude(
     profile: MusicProfile,
-    commitSize: number
+    commitSize: number,
+    layer: MusicLayer
   ): number {
-    const amplitude =
-      0.15 +
-      profile.intensity * 0.25 +
-      commitSize * 0.25;
+    const base =
+      0.12 +
+      profile.intensity * 0.18 +
+      commitSize * 0.18;
 
-    return Math.min(
-      amplitude,
-      0.7
-    );
+    switch (layer) {
+      case "melody":
+        return Math.min(
+          base + 0.08,
+          0.5
+        );
+
+      case "bass":
+        return Math.min(
+          base * 0.75,
+          0.35
+        );
+
+      case "pad":
+        return Math.min(
+          base * 0.55,
+          0.25
+        );
+    }
   }
 
   private calculateSpacing(

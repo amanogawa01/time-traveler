@@ -1,6 +1,9 @@
 import type { MusicEvent } from "../music/MusicEvent.js";
 import { Oscillator } from "./Oscillator.js";
-import { Envelope } from "./Envelope.js";
+import {
+  Envelope,
+  type EnvelopeSettings
+} from "./Envelope.js";
 
 export interface SynthesizerOptions {
   sampleRate: number;
@@ -71,6 +74,11 @@ export class Synthesizer {
         sampleRate
       );
 
+    const envelopeSettings =
+      this.getEnvelopeForLayer(
+        event.layer
+      );
+
     for (
       let index = 0;
       index < eventSamples;
@@ -99,18 +107,43 @@ export class Synthesizer {
         this.envelope.amplitude(
           time,
           event.duration,
-          {
-            attack: 0.05,
-            decay: 0.15,
-            sustain: 0.7,
-            release: 0.25
-          }
+          envelopeSettings
         );
 
       output[outputIndex] +=
         oscillatorSample *
         event.amplitude *
         envelopeAmplitude;
+    }
+  }
+
+  private getEnvelopeForLayer(
+    layer: MusicEvent["layer"]
+  ): EnvelopeSettings {
+    switch (layer) {
+      case "melody":
+        return {
+          attack: 0.02,
+          decay: 0.12,
+          sustain: 0.65,
+          release: 0.2
+        };
+
+      case "bass":
+        return {
+          attack: 0.08,
+          decay: 0.2,
+          sustain: 0.8,
+          release: 0.35
+        };
+
+      case "pad":
+        return {
+          attack: 0.35,
+          decay: 0.25,
+          sustain: 0.65,
+          release: 0.6
+        };
     }
   }
 
