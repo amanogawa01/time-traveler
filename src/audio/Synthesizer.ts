@@ -95,10 +95,9 @@ export class Synthesizer {
       const time =
         index / sampleRate;
 
-      const oscillatorSample =
-        this.oscillator.sample(
-          event.waveform,
-          event.frequency,
+      const timbreSample =
+        this.getTimbreSample(
+          event,
           time
         );
 
@@ -115,10 +114,80 @@ export class Synthesizer {
         );
 
       output[outputIndex] +=
-        oscillatorSample *
+        timbreSample *
         event.amplitude *
         envelopeAmplitude *
         layerGain;
+    }
+  }
+
+  private getTimbreSample(
+    event: MusicEvent,
+    time: number
+  ): number {
+    switch (event.layer) {
+      case "melody": {
+        const primary =
+          this.oscillator.sample(
+            event.waveform,
+            event.frequency,
+            time
+          );
+
+        const sine =
+          this.oscillator.sample(
+            "sine",
+            event.frequency,
+            time
+          );
+
+        return (
+          primary * 0.7 +
+          sine * 0.3
+        );
+      }
+
+      case "bass": {
+        const sine =
+          this.oscillator.sample(
+            "sine",
+            event.frequency,
+            time
+          );
+
+        const triangle =
+          this.oscillator.sample(
+            "triangle",
+            event.frequency,
+            time
+          );
+
+        return (
+          sine * 0.85 +
+          triangle * 0.15
+        );
+      }
+
+      case "pad": {
+        const sine =
+          this.oscillator.sample(
+            "sine",
+            event.frequency,
+            time
+          );
+
+        const triangle =
+          this.oscillator.sample(
+            "triangle",
+            event.frequency,
+            time
+          );
+
+        return (
+          sine * 0.6 +
+          triangle * 0.4
+        );
+      }
     }
   }
 
