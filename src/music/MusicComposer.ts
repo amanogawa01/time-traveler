@@ -376,23 +376,22 @@ export class MusicComposer {
       );
 
     const sizeCompression =
-      1 /
-      (
-        1 +
-        Math.log10(
-          Math.max(
-            1,
-            totalCommitCount
-          )
-        ) *
-        0.35
-      );
+      totalCommitCount <= 100
+        ? 1
+        : 1 /
+          (
+            1 +
+            Math.log10(
+              totalCommitCount / 100
+            ) *
+            0.18
+          );
 
     const baseSpacing =
       secondsPerBeat *
       (
-        0.75 +
-        normalizedGap * 4.25
+        1 +
+        normalizedGap * 4
       );
 
     return (

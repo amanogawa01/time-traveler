@@ -1,7 +1,8 @@
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 
-const execFileAsync = promisify(execFile);
+const execFileAsync =
+  promisify(execFile);
 
 export class GitRepository {
   public constructor(
@@ -43,40 +44,80 @@ export class GitRepository {
     return stdout.trim();
   }
 
-  public async getRawHistory(): Promise<string> {
+  public async branchExists(
+    branch: string
+  ): Promise<boolean> {
+    try {
+      await execFileAsync(
+        "git",
+        [
+          "rev-parse",
+          "--verify",
+          branch
+        ],
+        {
+          cwd: this.workingDirectory
+        }
+      );
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  public async getRawHistory(
+    branch?: string
+  ): Promise<string> {
+    const args = [
+      "log",
+      "--format=%H%x1f%an%x1f%ae%x1f%aI%x1f%s",
+      "--numstat"
+    ];
+
+    if (branch !== undefined) {
+      args.push(branch);
+    }
+
     return new Promise(
       (resolve, reject) => {
-        const git = spawn(
-          "git",
-          [
-            "log",
-            "--format=%H%x1f%an%x1f%ae%x1f%aI%x1f%s",
-            "--numstat"
-          ],
-          {
-            cwd: this.workingDirectory,
-            stdio: [
-              "ignore",
-              "pipe",
-              "pipe"
-            ]
-          }
-        );
+        const git =
+          spawn(
+            "git",
+            args,
+            {
+              cwd:
+                this.workingDirectory,
 
-        const stdoutChunks: Buffer[] = [];
-        const stderrChunks: Buffer[] = [];
+              stdio: [
+                "ignore",
+                "pipe",
+                "pipe"
+              ]
+            }
+          );
+
+        const stdoutChunks:
+          Buffer[] = [];
+
+        const stderrChunks:
+          Buffer[] = [];
 
         git.stdout.on(
           "data",
           (chunk: Buffer) => {
-            stdoutChunks.push(chunk);
+            stdoutChunks.push(
+              chunk
+            );
           }
         );
 
         git.stderr.on(
           "data",
           (chunk: Buffer) => {
-            stderrChunks.push(chunk);
+            stderrChunks.push(
+              chunk
+            );
           }
         );
 
@@ -94,7 +135,9 @@ export class GitRepository {
               const stderr =
                 Buffer.concat(
                   stderrChunks
-                ).toString("utf8");
+                ).toString(
+                  "utf8"
+                );
 
               reject(
                 new Error(
@@ -109,7 +152,9 @@ export class GitRepository {
             const stdout =
               Buffer.concat(
                 stdoutChunks
-              ).toString("utf8");
+              ).toString(
+                "utf8"
+              );
 
             resolve(stdout);
           }

@@ -11,6 +11,7 @@ import { WavEncoder } from "../../audio/WavEncoder.js";
 
 interface ExportOptions {
   output?: string;
+  branch?: string;
 }
 
 export function registerExportCommand(
@@ -19,16 +20,24 @@ export function registerExportCommand(
   program
     .command("export")
     .description(
-      "Generate a WAV sound from the current Git repository"
+      "Generate a WAV soundscape from the current Git repository"
     )
     .option(
       "-o, --output <file>",
       "Output WAV filename"
     )
+    .option(
+      "-b, --branch <branch>",
+      "Export a specific Git branch"
+    )
     .action(
-      async (options: ExportOptions) => {
+      async (
+        options: ExportOptions
+      ) => {
         const repository =
-          new GitRepository(process.cwd());
+          new GitRepository(
+            process.cwd()
+          );
 
         const historyParser =
           new GitHistoryParser();
@@ -60,13 +69,41 @@ export function registerExportCommand(
           return;
         }
 
+        let branch =
+          options.branch;
+
+        if (branch !== undefined) {
+          const exists =
+            await repository.branchExists(
+              branch
+            );
+
+          if (!exists) {
+            console.error(
+              `Branch "${branch}" does not exist.`
+            );
+
+            process.exitCode = 1;
+            return;
+          }
+        } else {
+          branch =
+            await repository.getCurrentBranch();
+        }
+
         const rawHistory =
-          await repository.getRawHistory();
+          await repository.getRawHistory(
+            branch
+          );
 
         const commits =
-          historyParser.parse(rawHistory);
+          historyParser.parse(
+            rawHistory
+          );
 
-        if (commits.length === 0) {
+        if (
+          commits.length === 0
+        ) {
           console.error(
             "Time Traveler could not find any commits in this repository."
           );
@@ -77,17 +114,25 @@ export function registerExportCommand(
 
         const latestCommit =
           commits.reduce(
-            (latest, commit) =>
-              commit.date > latest.date
+            (
+              latest,
+              commit
+            ) =>
+              commit.date >
+              latest.date
                 ? commit
                 : latest
           );
 
         const stats =
-          historyAnalyzer.analyze(commits);
+          historyAnalyzer.analyze(
+            commits
+          );
 
         const musicProfile =
-          musicMapper.createProfile(stats);
+          musicMapper.createProfile(
+            stats
+          );
 
         const musicEvents =
           musicComposer.compose(
@@ -98,32 +143,46 @@ export function registerExportCommand(
         const melodyCount =
           musicEvents.filter(
             event =>
-              event.layer === "melody"
+              event.layer ===
+              "melody"
           ).length;
 
         const bassCount =
           musicEvents.filter(
             event =>
-              event.layer === "bass"
+              event.layer ===
+              "bass"
           ).length;
 
         const padCount =
           musicEvents.filter(
             event =>
-              event.layer === "pad"
+              event.layer ===
+              "pad"
           ).length;
 
         console.log();
-        console.log("Composition");
+
+        console.log(
+          "Composition"
+        );
+
+        console.log(
+          `  Branch: ${branch}`
+        );
+
         console.log(
           `  Total events: ${musicEvents.length}`
         );
+
         console.log(
           `  Melody: ${melodyCount}`
         );
+
         console.log(
           `  Bass: ${bassCount}`
         );
+
         console.log(
           `  Pad: ${padCount}`
         );
@@ -139,16 +198,25 @@ export function registerExportCommand(
           );
 
         const shortHash =
-          latestCommit.hash.slice(0, 7);
+          latestCommit.hash.slice(
+            0,
+            7
+          );
 
         const repositoryName =
           path.basename(
             process.cwd()
           );
 
+        const safeBranchName =
+          branch.replace(
+            /[^a-zA-Z0-9._-]/g,
+            "-"
+          );
+
         const outputFileName =
           options.output ??
-          `${repositoryName}-${shortHash}.wav`;
+          `${repositoryName}-${safeBranchName}-${shortHash}.wav`;
 
         await writeFile(
           outputFileName,
@@ -156,6 +224,7 @@ export function registerExportCommand(
         );
 
         console.log();
+
         console.log(
           `Audio written to ${outputFileName}`
         );
