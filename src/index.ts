@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import { registerAnalyzeCommand } from "./cli/commands/analyze.js";
 import { registerExportCommand } from "./cli/commands/export.js";
+import { registerPlayCommand } from "./cli/commands/play.js";
 
 const program = new Command();
 
@@ -13,5 +14,6 @@ program
 
 registerAnalyzeCommand(program);
 registerExportCommand(program);
+registerPlayCommand(program);
 
 program.parseAsync();
