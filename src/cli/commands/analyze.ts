@@ -50,31 +50,46 @@ export function registerAnalyzeCommand(
           return;
         }
 
-        let branch =
+        const hasCommits =
+          await repository.hasCommits();
+
+        if (!hasCommits) {
+          console.error(
+            "Time Traveler cannot process a repository with no commits."
+          );
+
+          process.exitCode = 1;
+          return;
+        }
+
+        const requestedBranch =
           options.branch;
 
-        if (branch !== undefined) {
+        if (
+          requestedBranch !== undefined
+        ) {
           const exists =
             await repository.branchExists(
-              branch
+              requestedBranch
             );
 
           if (!exists) {
             console.error(
-              `Branch "${branch}" does not exist.`
+              `Branch "${requestedBranch}" does not exist.`
             );
 
             process.exitCode = 1;
             return;
           }
-        } else {
-          branch =
-            await repository.getCurrentBranch();
         }
+
+        const branch =
+          requestedBranch ??
+          await repository.getCurrentBranch();
 
         const rawHistory =
           await repository.getRawHistory(
-            branch
+            requestedBranch
           );
 
         const commits =

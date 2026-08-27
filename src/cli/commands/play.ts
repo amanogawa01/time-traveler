@@ -1,6 +1,6 @@
 import path from "node:path";
 import os from "node:os";
-import {writeFile} from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import type { Command } from "commander";
 import { GitRepository } from "../../git/GitRepository.js";
 import { GitHistoryParser } from "../../git/GitHistoryParser.js";
@@ -69,31 +69,46 @@ export function registerPlayCommand(
           return;
         }
 
-        let branch =
+        const hasCommits =
+          await repository.hasCommits();
+
+        if (!hasCommits) {
+          console.error(
+            "Time Traveler cannot process a repository with no commits."
+          );
+
+          process.exitCode = 1;
+          return;
+        }
+
+        const requestedBranch =
           options.branch;
 
-        if (branch !== undefined) {
+        if (
+          requestedBranch !== undefined
+        ) {
           const exists =
             await repository.branchExists(
-              branch
+              requestedBranch
             );
 
           if (!exists) {
             console.error(
-              `Branch "${branch}" does not exist.`
+              `Branch "${requestedBranch}" does not exist.`
             );
 
             process.exitCode = 1;
             return;
           }
-        } else {
-          branch =
-            await repository.getCurrentBranch();
         }
+
+        const branch =
+          requestedBranch ??
+          await repository.getCurrentBranch();
 
         const rawHistory =
           await repository.getRawHistory(
-            branch
+            requestedBranch
           );
 
         const commits =
@@ -101,7 +116,9 @@ export function registerPlayCommand(
             rawHistory
           );
 
-        if (commits.length === 0) {
+        if (
+          commits.length === 0
+        ) {
           console.error(
             "Time Traveler could not find any commits in this repository."
           );
@@ -111,6 +128,7 @@ export function registerPlayCommand(
         }
 
         console.log();
+
         console.log(
           `Generating soundscape for ${branch}...`
         );
@@ -156,19 +174,9 @@ export function registerPlayCommand(
           `Playing ${commits.length} commits from ${branch}`
         );
 
-       await audioPlayer.play(
+        await audioPlayer.play(
           temporaryFile
         );
-
-        /*
-         * Don't immediately delete the file.
-         *
-         * The external audio application may still
-         * need to read it after Time Traveler exits.
-         *
-         * Temporary OS files can be cleaned up
-         * normally by the operating system.
-         */
       }
     );
 }

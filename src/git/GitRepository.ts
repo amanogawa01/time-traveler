@@ -1,4 +1,7 @@
-import { execFile, spawn } from "node:child_process";
+import {
+  execFile,
+  spawn
+} from "node:child_process";
 import { promisify } from "node:util";
 
 const execFileAsync =
@@ -28,6 +31,26 @@ export class GitRepository {
     }
   }
 
+  public async hasCommits(): Promise<boolean> {
+    try {
+      await execFileAsync(
+        "git",
+        [
+          "rev-parse",
+          "--verify",
+          "HEAD"
+        ],
+        {
+          cwd: this.workingDirectory
+        }
+      );
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   public async getCurrentBranch(): Promise<string> {
     const { stdout } =
       await execFileAsync(
@@ -41,7 +64,27 @@ export class GitRepository {
         }
       );
 
-    return stdout.trim();
+    const branch =
+      stdout.trim();
+
+    if (branch.length > 0) {
+      return branch;
+    }
+
+    const { stdout: shortHash } =
+      await execFileAsync(
+        "git",
+        [
+          "rev-parse",
+          "--short",
+          "HEAD"
+        ],
+        {
+          cwd: this.workingDirectory
+        }
+      );
+
+    return `detached-${shortHash.trim()}`;
   }
 
   public async branchExists(
@@ -51,9 +94,10 @@ export class GitRepository {
       await execFileAsync(
         "git",
         [
-          "rev-parse",
+          "show-ref",
           "--verify",
-          branch
+          "--quiet",
+          `refs/heads/${branch}`
         ],
         {
           cwd: this.workingDirectory
@@ -80,7 +124,10 @@ export class GitRepository {
     }
 
     return new Promise(
-      (resolve, reject) => {
+      (
+        resolve,
+        reject
+      ) => {
         const git =
           spawn(
             "git",
@@ -88,7 +135,6 @@ export class GitRepository {
             {
               cwd:
                 this.workingDirectory,
-
               stdio: [
                 "ignore",
                 "pipe",
