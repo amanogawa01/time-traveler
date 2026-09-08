@@ -109,10 +109,85 @@ export class GitRepository {
       return false;
     }
   }
-
-  public async getRawHistory(
+  public async *streamHistory(
     branch?: string
-  ): Promise<string> {
+  ): AsyncGenerator<string> {
+    const args =
+      this.createLogArguments(
+        branch
+      );
+
+    const git =
+      spawn(
+        "git",
+        args,
+        {
+          cwd:
+            this.workingDirectory,
+          stdio: [
+            "ignore",
+            "pipe",
+            "pipe"
+          ]
+        }
+      );
+
+    let stderr = "";
+
+    git.stderr.setEncoding(
+      "utf8"
+    );
+
+    git.stderr.on(
+      "data",
+      (chunk: string) => {
+        stderr += chunk;
+      }
+    );
+
+    const exitPromise =
+      new Promise<number | null>(
+        (
+          resolve,
+          reject
+        ) => {
+          git.on(
+            "error",
+            reject
+          );
+
+          git.on(
+            "close",
+            resolve
+          );
+        }
+      );
+
+    git.stdout.setEncoding(
+      "utf8"
+    );
+
+    for await (
+      const chunk
+      of git.stdout
+    ) {
+      yield chunk;
+    }
+
+    const exitCode =
+      await exitPromise;
+
+    if (exitCode !== 0) {
+      throw new Error(
+        stderr ||
+          `Git exited with code ${exitCode}.`
+      );
+    }
+  }
+
+  private createLogArguments(
+    branch?: string
+  ): string[] {
     const args = [
       "log",
       "--format=%H%x1f%an%x1f%ae%x1f%aI%x1f%s",
@@ -120,92 +195,11 @@ export class GitRepository {
     ];
 
     if (branch !== undefined) {
-      args.push(branch);
+      args.push(
+        `refs/heads/${branch}`
+      );
     }
 
-    return new Promise(
-      (
-        resolve,
-        reject
-      ) => {
-        const git =
-          spawn(
-            "git",
-            args,
-            {
-              cwd:
-                this.workingDirectory,
-              stdio: [
-                "ignore",
-                "pipe",
-                "pipe"
-              ]
-            }
-          );
-
-        const stdoutChunks:
-          Buffer[] = [];
-
-        const stderrChunks:
-          Buffer[] = [];
-
-        git.stdout.on(
-          "data",
-          (chunk: Buffer) => {
-            stdoutChunks.push(
-              chunk
-            );
-          }
-        );
-
-        git.stderr.on(
-          "data",
-          (chunk: Buffer) => {
-            stderrChunks.push(
-              chunk
-            );
-          }
-        );
-
-        git.on(
-          "error",
-          error => {
-            reject(error);
-          }
-        );
-
-        git.on(
-          "close",
-          code => {
-            if (code !== 0) {
-              const stderr =
-                Buffer.concat(
-                  stderrChunks
-                ).toString(
-                  "utf8"
-                );
-
-              reject(
-                new Error(
-                  stderr ||
-                    `Git exited with code ${code}.`
-                )
-              );
-
-              return;
-            }
-
-            const stdout =
-              Buffer.concat(
-                stdoutChunks
-              ).toString(
-                "utf8"
-              );
-
-            resolve(stdout);
-          }
-        );
-      }
-    );
+    return args;
   }
 }

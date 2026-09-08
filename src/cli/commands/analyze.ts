@@ -87,16 +87,14 @@ export function registerAnalyzeCommand(
           requestedBranch ??
           await repository.getCurrentBranch();
 
-        const rawHistory =
-          await repository.getRawHistory(
-            requestedBranch
-          );
-
-        const commits =
-          historyParser.parse(
-            rawHistory
-          );
-
+       const historyStream =
+  repository.streamHistory(
+    requestedBranch
+  );
+  const commits =
+  await historyParser.parseStream(
+    historyStream
+  );
         if (
           commits.length === 0
         ) {

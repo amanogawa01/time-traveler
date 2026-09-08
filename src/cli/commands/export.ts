@@ -106,15 +106,15 @@ export function registerExportCommand(
           requestedBranch ??
           await repository.getCurrentBranch();
 
-        const rawHistory =
-          await repository.getRawHistory(
-            requestedBranch
-          );
+       const historyStream =
+  repository.streamHistory(
+    requestedBranch
+  );
 
-        const commits =
-          historyParser.parse(
-            rawHistory
-          );
+const commits =
+  await historyParser.parseStream(
+    historyStream
+  );
 
         if (
           commits.length === 0
