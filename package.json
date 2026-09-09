@@ -6,12 +6,30 @@
   "bin": {
     "time-traveler": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint .",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amanogawa01/time-traveler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/amanogawa01/time-traveler/issues"
+  },
+  "homepage": "https://github.com/amanogawa01/time-traveler#readme",
+  "engines": {
+    "node": ">=20"
   },
   "keywords": [
     "git",
@@ -20,17 +38,22 @@
     "audio",
     "typescript",
     "node",
+    "sonification",
     "generative-music"
   ],
   "license": "MIT",
   "dependencies": {
-    "commander": "^14.0.0",
-    "vitest": "^4.1.11"
+    "commander": "^14.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.3",
+    "eslint": "^10.10.0",
     "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^4.1.11",
+    "lint": "eslint ."
   },
   "allowScripts": {
     "esbuild@0.28.2": true

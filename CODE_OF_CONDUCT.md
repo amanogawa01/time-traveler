@@ -6,22 +6,22 @@ Time Traveler is an open-source project, and everyone participating in the proje
 
 Examples of positive behavior include:
 
-* Treating other contributors with respect
-* Giving constructive technical feedback
-* Being open to different ideas and approaches
-* Helping new contributors understand the project
-* Focusing disagreements on code and technical decisions rather than individuals
-* Respecting differences in experience, background, and perspective
+- Treating other contributors with respect
+- Giving constructive technical feedback
+- Being open to different ideas and approaches
+- Helping new contributors understand the project
+- Focusing disagreements on code and technical decisions rather than individuals
+- Respecting differences in experience, background, and perspective
 
 Unacceptable behavior includes:
 
-* Harassment, threats, or personal attacks
-* Discriminatory or derogatory comments
-* Deliberate intimidation
-* Trolling or repeatedly disrupting discussions
-* Publishing someone else's private information without permission
-* Sexual harassment or unwanted sexual attention
-* Abusive behavior toward maintainers or contributors
+- Harassment, threats, or personal attacks
+- Discriminatory or derogatory comments
+- Deliberate intimidation
+- Trolling or repeatedly disrupting discussions
+- Publishing someone else's private information without permission
+- Sexual harassment or unwanted sexual attention
+- Abusive behavior toward maintainers or contributors
 
 ## Technical Disagreements
 
@@ -43,11 +43,11 @@ Not good:
 
 This Code of Conduct applies to project spaces including:
 
-* GitHub issues
-* Pull requests
-* Discussions
-* Code reviews
-* Project-related communication
+- GitHub issues
+- Pull requests
+- Discussions
+- Code reviews
+- Project-related communication
 
 It also applies when someone is publicly representing the Time Traveler project.
 
@@ -57,10 +57,10 @@ Project maintainers are responsible for interpreting and enforcing these standar
 
 Behavior that violates this Code of Conduct may result in:
 
-* A warning
-* Removal of comments or contributions
-* Temporary restrictions from participating
-* Permanent exclusion from the project
+- A warning
+- Removal of comments or contributions
+- Temporary restrictions from participating
+- Permanent exclusion from the project
 
 Enforcement decisions should be based on the severity and context of the behavior.
 
