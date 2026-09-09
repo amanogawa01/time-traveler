@@ -18,8 +18,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "eslint .",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build"
-  },
+    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build"  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/amanogawa01/time-traveler.git"
@@ -52,8 +51,7 @@
     "tsx": "^4.0.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.70.0",
-    "vitest": "^4.1.11",
-    "lint": "eslint ."
+    "vitest": "^4.1.11"
   },
   "allowScripts": {
     "esbuild@0.28.2": true
