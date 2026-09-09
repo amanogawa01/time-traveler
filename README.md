@@ -77,6 +77,13 @@ Time Traveler has been stress-tested against repositories including:
 
 ## Installation
 
+```bash
+npm i -g @summer_icicle/time-traveler
+```
+
+
+or, alternatively, you can install it from github and build it yourself. 
+
 Clone the repository:
 
 ```bash

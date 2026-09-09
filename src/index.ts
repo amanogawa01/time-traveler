@@ -10,7 +10,7 @@ const program = new Command();
 program
   .name("time-traveler")
   .description("Turn your Git history into music")
-  .version("0.1.1");
+  .version("0.1.3");
 
 registerAnalyzeCommand(program);
 registerExportCommand(program);
