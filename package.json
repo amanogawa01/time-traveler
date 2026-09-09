@@ -1,10 +1,10 @@
 {
-  "name": "time-traveler",
+  "name": "@summer_icicle/time-traveler",
   "version": "0.1.0",
   "description": "A command-line tool that turns Git history into music",
   "type": "module",
   "bin": {
-    "time-traveler": "./dist/index.js"
+    "time-traveler": "dist/index.js"
   },
   "files": [
     "dist",
@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "eslint .",
-    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build"  },
+    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/amanogawa01/time-traveler.git"
