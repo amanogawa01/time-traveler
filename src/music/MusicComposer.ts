@@ -38,34 +38,45 @@ export class MusicComposer {
           b.date.getTime()
       );
 
-    const maximumLinesChanged =
-      Math.max(
-        ...chronologicalCommits.map(
-          commit =>
-            commit.insertions +
-            commit.deletions
-        ),
-        1
+    const musicalCommits =
+      this.aggregateLargeHistory(
+        chronologicalCommits
       );
 
-    const maximumFilesChanged =
-      Math.max(
-        ...chronologicalCommits.map(
-          commit =>
-            commit.filesChanged
-        ),
-        1
-      );
+    let maximumLinesChanged = 1;
+    let maximumFilesChanged = 1;
+
+    for (const commit of musicalCommits) {
+      const linesChanged =
+        commit.insertions +
+        commit.deletions;
+
+      if (
+        linesChanged >
+        maximumLinesChanged
+      ) {
+        maximumLinesChanged =
+          linesChanged;
+      }
+
+      if (
+        commit.filesChanged >
+        maximumFilesChanged
+      ) {
+        maximumFilesChanged =
+          commit.filesChanged;
+      }
+    }
 
     let currentTime = 0;
 
     for (
       let index = 0;
-      index < chronologicalCommits.length;
+      index < musicalCommits.length;
       index += 1
     ) {
       const commit =
-        chronologicalCommits[index];
+        musicalCommits[index];
 
       if (commit === undefined) {
         continue;
@@ -91,7 +102,8 @@ export class MusicComposer {
 
       const deletionRatio =
         linesChanged > 0
-          ? commit.deletions / linesChanged
+          ? commit.deletions /
+            linesChanged
           : 0;
 
       const scaleDegree =
@@ -101,12 +113,17 @@ export class MusicComposer {
         );
 
       const melodyOctave =
-        this.chooseOctave(commit);
+        this.chooseOctave(
+          commit
+        );
 
       const melodyMidi =
         rootMidi +
-        scaleIntervals[scaleDegree] +
-        (melodyOctave - 4) * 12 +
+        scaleIntervals[
+          scaleDegree
+        ] +
+        (melodyOctave - 4) *
+          12 +
         this.calculateTensionOffset(
           deletionRatio
         );
@@ -130,13 +147,20 @@ export class MusicComposer {
         );
 
       events.push({
-        startTime: currentTime,
-        duration: melodyDuration,
-        frequency: melodyFrequency,
-        amplitude: melodyAmplitude,
-        waveform: profile.waveform,
-        layer: "melody",
-        commitHash: commit.hash
+        startTime:
+          currentTime,
+        duration:
+          melodyDuration,
+        frequency:
+          melodyFrequency,
+        amplitude:
+          melodyAmplitude,
+        waveform:
+          profile.waveform,
+        layer:
+          "melody",
+        commitHash:
+          commit.hash
       });
 
       const bassMidi =
@@ -148,10 +172,14 @@ export class MusicComposer {
         ];
 
       events.push({
-        startTime: currentTime,
+        startTime:
+          currentTime,
         duration:
           secondsPerBeat *
-          (2 + fileComplexity),
+          (
+            2 +
+            fileComplexity
+          ),
         frequency:
           midiToFrequency(
             bassMidi
@@ -162,16 +190,20 @@ export class MusicComposer {
             size,
             "bass"
           ),
-        waveform: "sine",
-        layer: "bass",
-        commitHash: commit.hash
+        waveform:
+          "sine",
+        layer:
+          "bass",
+        commitHash:
+          commit.hash
       });
 
       const padDuration =
         secondsPerBeat *
         (
           3 +
-          fileComplexity * 3
+          fileComplexity *
+            3
         );
 
       const chordDegrees = [
@@ -192,7 +224,8 @@ export class MusicComposer {
           Math.floor(
             chordDegree /
             scaleIntervals.length
-          ) * 12;
+          ) *
+          12;
 
         const padMidi =
           rootMidi +
@@ -202,8 +235,10 @@ export class MusicComposer {
           octaveShift;
 
         events.push({
-          startTime: currentTime,
-          duration: padDuration,
+          startTime:
+            currentTime,
+          duration:
+            padDuration,
           frequency:
             midiToFrequency(
               padMidi
@@ -214,22 +249,155 @@ export class MusicComposer {
               size,
               "pad"
             ),
-          waveform: "sine",
-          layer: "pad",
-          commitHash: commit.hash
+          waveform:
+            "sine",
+          layer:
+            "pad",
+          commitHash:
+            commit.hash
         });
       }
 
       currentTime +=
         this.calculateSpacing(
-          chronologicalCommits,
+          musicalCommits,
           index,
           secondsPerBeat,
-          chronologicalCommits.length
+          commits.length
         );
     }
 
     return events;
+  }
+
+  private aggregateLargeHistory(
+    commits: GitCommit[]
+  ): GitCommit[] {
+    const aggregationThreshold =
+      1000;
+
+    if (
+      commits.length <=
+      aggregationThreshold
+    ) {
+      return commits;
+    }
+
+    const targetCount =
+      Math.round(
+        600 +
+        Math.log10(
+          commits.length /
+          aggregationThreshold
+        ) *
+        120
+      );
+
+    const bucketSize =
+      Math.ceil(
+        commits.length /
+        targetCount
+      );
+
+    const aggregated:
+      GitCommit[] = [];
+
+    for (
+      let start = 0;
+      start < commits.length;
+      start += bucketSize
+    ) {
+      const end =
+        Math.min(
+          start +
+          bucketSize,
+          commits.length
+        );
+
+      const first =
+        commits[start];
+
+      const last =
+        commits[
+          end - 1
+        ];
+
+      if (
+        first === undefined ||
+        last === undefined
+      ) {
+        continue;
+      }
+
+      let insertions = 0;
+      let deletions = 0;
+      let filesChanged = 0;
+      let timestampTotal = 0;
+      let commitCount = 0;
+
+      for (
+        let index = start;
+        index < end;
+        index += 1
+      ) {
+        const commit =
+          commits[index];
+
+        if (
+          commit === undefined
+        ) {
+          continue;
+        }
+
+        insertions +=
+          commit.insertions;
+
+        deletions +=
+          commit.deletions;
+
+        filesChanged +=
+          commit.filesChanged;
+
+        timestampTotal +=
+          commit.date.getTime();
+
+        commitCount += 1;
+      }
+
+      if (commitCount === 0) {
+        continue;
+      }
+
+      const averageTimestamp =
+        timestampTotal /
+        commitCount;
+
+      aggregated.push({
+        hash:
+          `${first.hash.slice(
+            0,
+            7
+          )}-${last.hash.slice(
+            0,
+            7
+          )}`,
+        authorName:
+          "Aggregated",
+        authorEmail:
+          "",
+        date:
+          new Date(
+            averageTimestamp
+          ),
+        message:
+          `Aggregated ${commitCount} commits`,
+        insertions,
+        deletions,
+        filesChanged
+      });
+    }
+
+    return aggregated;
   }
 
   private chooseScaleDegree(
@@ -240,7 +408,10 @@ export class MusicComposer {
       commit.insertions +
       commit.filesChanged;
 
-    return value % scaleLength;
+    return (
+      value %
+      scaleLength
+    );
   }
 
   private chooseOctave(
@@ -268,13 +439,15 @@ export class MusicComposer {
     deletionRatio: number
   ): number {
     if (
-      deletionRatio >= 0.6
+      deletionRatio >=
+      0.6
     ) {
       return 1;
     }
 
     if (
-      deletionRatio >= 0.35
+      deletionRatio >=
+      0.35
     ) {
       return -1;
     }
@@ -290,7 +463,8 @@ export class MusicComposer {
       secondsPerBeat *
       (
         0.75 +
-        fileComplexity * 1.5
+        fileComplexity *
+          1.5
       )
     );
   }
@@ -338,7 +512,9 @@ export class MusicComposer {
       commits[index];
 
     const next =
-      commits[index + 1];
+      commits[
+        index + 1
+      ];
 
     if (
       current === undefined ||
@@ -355,7 +531,11 @@ export class MusicComposer {
       Math.max(
         0,
         millisecondsBetween /
-        (1000 * 60 * 60)
+        (
+          1000 *
+          60 *
+          60
+        )
       );
 
     const compressedGap =
@@ -376,13 +556,15 @@ export class MusicComposer {
       );
 
     const sizeCompression =
-      totalCommitCount <= 100
+      totalCommitCount <=
+      100
         ? 1
         : 1 /
           (
             1 +
             Math.log10(
-              totalCommitCount / 100
+              totalCommitCount /
+              100
             ) *
             0.18
           );
@@ -391,7 +573,8 @@ export class MusicComposer {
       secondsPerBeat *
       (
         1 +
-        normalizedGap * 4
+        normalizedGap *
+          4
       );
 
     return (

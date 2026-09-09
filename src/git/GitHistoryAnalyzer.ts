@@ -102,12 +102,42 @@ export class GitHistoryAnalyzer {
   private calculateRepositoryAgeDays(
     commits: GitCommit[]
   ): number {
-    const timestamps = commits.map(
-      commit => commit.date.getTime()
-    );
+    const firstCommit =
+      commits[0];
 
-    const oldest = Math.min(...timestamps);
-    const newest = Math.max(...timestamps);
+    if (firstCommit === undefined) {
+      return 0;
+    }
+
+    let oldest =
+      firstCommit.date.getTime();
+
+    let newest =
+      oldest;
+
+    for (
+      let index = 1;
+      index < commits.length;
+      index += 1
+    ) {
+      const commit =
+        commits[index];
+
+      if (commit === undefined) {
+        continue;
+      }
+
+      const timestamp =
+        commit.date.getTime();
+
+      if (timestamp < oldest) {
+        oldest = timestamp;
+      }
+
+      if (timestamp > newest) {
+        newest = timestamp;
+      }
+    }
 
     const millisecondsPerDay =
       1000 * 60 * 60 * 24;
